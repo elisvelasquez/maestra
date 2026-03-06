@@ -18,7 +18,7 @@ class TeacherDashboardApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Maestra - Dashboard de Despachos',
+      title: 'Salones - Dashboard de Despachos',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -83,7 +83,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       await Supabase.instance.client
           .from('log_despachos')
-          .update({'estatus': 'Llamado al Salon'}).eq('id', logId);
+          .update({
+            'estatus': 'Llamado al Salon',
+            'fecha_hora_entrega': DateTime.now().toIso8601String(),
+          }).eq('id', logId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
