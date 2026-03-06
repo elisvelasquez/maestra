@@ -191,7 +191,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 final allRecords = snapshot.data ?? [];
                 final records = allRecords.where((log) {
-                  final fechaStr = log['fecha_hora_entrega'] as String?;
+                  final fechaStr = log['fecha_hora_llegada'] as String?;
                   if (fechaStr == null) return false;
                   final fecha = DateTime.parse(fechaStr);
                   return fecha.isAfter(startOfDay) && fecha.isBefore(endOfDay);
