@@ -83,10 +83,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       await Supabase.instance.client
           .from('log_despachos')
-          .update({
-            'estatus': 'Llamado al Salon',
-            'fecha_hora_entrega': DateTime.now().toIso8601String(),
-          }).eq('id', logId);
+          .update({'estatus': 'Llamado al Salon'}).eq('id', logId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -259,12 +256,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           const Divider(color: Colors.white, thickness: 2),
+          AppBar(
+            title: const Text(
+              'Alumnos Entregados Hoy',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+        backgroundColor: const Color(0xFF1A5F7A),
+        elevation: 0,
+      ),
           Expanded(
             child: StreamBuilder<List<Map<String, dynamic>>>(
               stream: Supabase.instance.client
                   .from('log_despachos')
                   .stream(primaryKey: ['id'])
-                  .eq('estatus', 'Llamado al Salon'),
+                  .eq('estatus', 'Entregado'),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(
