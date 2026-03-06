@@ -107,6 +107,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
     return Scaffold(
       backgroundColor: const Color(0xFF0D3B4C),
       appBar: AppBar(
@@ -185,7 +189,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   );
                 }
 
-                final records = snapshot.data ?? [];
+                final allRecords = snapshot.data ?? [];
+                final records = allRecords.where((log) {
+                  final fechaStr = log['fecha_hora_entrega'] as String?;
+                  if (fechaStr == null) return false;
+                  final fecha = DateTime.parse(fechaStr);
+                  return fecha.isAfter(startOfDay) && fecha.isBefore(endOfDay);
+                }).toList();
 
                 if (records.isEmpty) {
                   return Center(
@@ -251,9 +261,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               stream: Supabase.instance.client
                   .from('log_despachos')
                   .stream(primaryKey: ['id'])
-                  .eq('estatus', 'Llamado al Salon')
-                  .order('fecha_hora_entrega', ascending: false)
-                  .limit(20),
+                  .eq('estatus', 'Llamado al Salon'),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(
@@ -264,7 +272,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   );
                 }
 
-                final records = snapshot.data ?? [];
+                final allRecords = snapshot.data ?? [];
+                final records = allRecords.where((log) {
+                  final fechaStr = log['fecha_hora_entrega'] as String?;
+                  if (fechaStr == null) return false;
+                  final fecha = DateTime.parse(fechaStr);
+                  return fecha.isAfter(startOfDay) && fecha.isBefore(endOfDay);
+                }).toList()..sort((a, b) {
+                  final aFecha = DateTime.parse(a['fecha_hora_entrega']);
+                  final bFecha = DateTime.parse(b['fecha_hora_entrega']);
+                  return bFecha.compareTo(aFecha); // descending
+                })..take(20).toList();
 
                 if (records.isEmpty) {
                   return const Center(
@@ -289,7 +307,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 16),
                       child: _DeliveredStudentCard(
-                        estudianteId: estudianteId,
+                        log: log,
                         getEstudiante: _getEstudiante,
                       ),
                     );
@@ -474,17 +492,21 @@ class _WaitingStudentCardState extends State<_WaitingStudentCard> {
 /// Card displaying a delivered student
 class _DeliveredStudentCard extends StatelessWidget {
   const _DeliveredStudentCard({
-    required this.estudianteId,
+    required this.log,
     required this.getEstudiante,
   });
 
-  final String estudianteId;
+  final Map<String, dynamic> log;
   final Future<Map<String, dynamic>?> Function(String) getEstudiante;
 
   @override
   Widget build(BuildContext context) {
+    final estudianteId = log['estudiante_id'] as String?;
+    final fechaHoraEntrega = log['fecha_hora_entrega'] as String?;
+    final retiradoPor = log['retirado_por'] as String?;
+
     return FutureBuilder<Map<String, dynamic>?>(
-      future: getEstudiante(estudianteId),
+      future: estudianteId != null ? getEstudiante(estudianteId) : Future.value(null),
       builder: (context, estSnapshot) {
         final estudiante = estSnapshot.data;
         final isLoading = estSnapshot.connectionState == ConnectionState.waiting;
@@ -587,6 +609,26 @@ class _DeliveredStudentCard extends StatelessWidget {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
+                            if (fechaHoraEntrega != null) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'Hora de despacho: ${DateTime.parse(fechaHoraEntrega).toLocal().toString().split('.')[0]}',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                            if (retiradoPor != null && retiradoPor.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'Retirado por: $retiradoPor',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
